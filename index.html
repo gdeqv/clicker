@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Мега Кликер Супер пупер про макс</title>
+<style>
+  body { font-family: Arial, sans-serif; text-align: center; margin: 50px; background: #f0f0f0; }
+  #game { display: none; }
+  button { padding: 10px 20px; margin: 5px; font-size: 16px; cursor: pointer; }
+  input { padding: 5px; font-size: 14px; }
+  #achievements { margin-top: 20px; }
+  #leaderboard { margin-top: 20px; text-align: left; display: inline-block; }
+</style>
+</head>
+<body>
+
+<h1>Мега Кликер Супер пупер про макс</h1>
+
+<div id="register">
+  <h2>Регистрация</h2>
+  <input type="text" id="username" placeholder="Имя игрока">
+  <button onclick="register()">Старт</button>
+</div>
+
+<div id="game">
+  <h2 id="greeting"></h2>
+  <button onclick="clicker()">Клик!</button>
+  <p>Клики: <span id="clickCount">0</span></p>
+  <div id="achievements">
+    <h3>Достижения</h3>
+    <ul id="achieveList"></ul>
+  </div>
+  <div id="leaderboard">
+    <h3>Топ игроков</h3>
+    <ol id="topList"></ol>
+  </div>
+</div>
+
+<script>
+let username = '';
+let clicks = 0;
+let achievements = [];
+
+// Регистрируем игрока
+function register() {
+  const input = document.getElementById('username');
+  if(input.value.trim() === '') {
+    alert('Введите имя!');
+    return;
+  }
+  username = input.value.trim();
+
+  // Загружаем данные игрока если есть
+  const savedData = localStorage.getItem(username);
+  if(savedData) {
+    const data = JSON.parse(savedData);
+    clicks = data.clicks;
+    achievements = data.achievements;
+  }
+
+  document.getElementById('register').style.display = 'none';
+  document.getElementById('game').style.display = 'block';
+  document.getElementById('greeting').innerText = `Привет, ${username}! Добро пожаловать в Мега Кликер Супер пупер про макс!`;
+  updateUI();
+}
+
+// Кликер
+function clicker() {
+  clicks++;
+  checkAchievements();
+  saveData();
+  updateUI();
+}
+
+// Проверка достижений
+function checkAchievements() {
+  const thresholds = [10, 50, 100, 500];
+  thresholds.forEach(thr => {
+    if(clicks >= thr && !achievements.includes(thr)) {
+      achievements.push(thr);
+      alert(`Достижение: ${thr} кликов!`);
+    }
+  });
+}
+
+// Сохраняем данные локально
+function saveData() {
+  const data = { clicks, achievements };
+  localStorage.setItem(username, JSON.stringify(data));
+  updateLeaderboard();
+}
+
+// Обновление интерфейса
+function updateUI() {
+  document.getElementById('clickCount').innerText = clicks;
+  const achieveList = document.getElementById('achieveList');
+  achieveList.innerHTML = '';
+  achievements.forEach(a => {
+    const li = document.createElement('li');
+    li.textContent = `${a} кликов`;
+    achieveList.appendChild(li);
+  });
+  updateLeaderboard();
+}
+
+// Топ игроков
+function updateLeaderboard() {
+  const topList = document.getElementById('topList');
+  topList.innerHTML = '';
+
+  // Получаем всех игроков из localStorage
+  let players = [];
+  for(let i=0; i<localStorage.length; i++) {
+    const key = localStorage.key(i);
+    try {
+      const data = JSON.parse(localStorage.getItem(key));
+      players.push({ name: key, clicks: data.clicks || 0 });
+    } catch(e){}
+  }
+
+  players.sort((a,b) => b.clicks - a.clicks);
+  players.slice(0,5).forEach(p => {
+    const li = document.createElement('li');
+    li.textContent = `${p.name} - ${p.clicks}`;
+    topList.appendChild(li);
+  });
+}
+</script>
+
+</body>
+  </html>
