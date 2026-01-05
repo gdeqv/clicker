@@ -3,63 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Firebase Clicker Online</title>
+    <title>Мега Кликер Супер Пупер Про Макс</title>
     <style>
-        :root { --primary: #ffcc00; --dark: #2c3e50; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { background: white; padding: 2rem; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; position: relative; }
+        :root { --primary: #f1c40f; --dark: #2c3e50; --accent: #e67e22; }
+        body { font-family: 'Arial Black', Gadget, sans-serif; background: #1a1a1a; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; color: #fff; overflow: hidden; }
         
+        .container { background: #2c3e50; padding: 2.5rem; border-radius: 30px; box-shadow: 0 0 50px rgba(241, 196, 15, 0.2); width: 100%; max-width: 450px; text-align: center; border: 3px solid var(--primary); z-index: 10; }
+        
+        h1 { font-size: 1.8rem; text-transform: uppercase; color: var(--primary); text-shadow: 2px 2px 10px rgba(0,0,0,0.5); margin-bottom: 20px; }
+
+        /* Окно выбора ника */
+        #username-setup { display: none; flex-direction: column; gap: 15px; }
+        input#new-username { padding: 12px; border-radius: 10px; border: none; font-size: 16px; text-align: center; }
+
         /* Кнопка-кликер */
-        #click-area { position: relative; cursor: pointer; user-select: none; transition: transform 0.1s; margin: 20px auto; width: 150px; }
-        #click-area:active { transform: scale(0.95); }
+        #click-area { position: relative; cursor: pointer; user-select: none; transition: transform 0.05s; margin: 20px auto; width: 160px; filter: drop-shadow(0 0 15px var(--primary)); }
+        #click-area:active { transform: scale(0.9); }
         #click-area img { width: 100%; pointer-events: none; }
 
-        /* Вылетающий текст +1 */
-        .floating-text {
-            position: absolute; color: #27ae60; font-weight: bold; font-size: 24px;
-            pointer-events: none; animation: floatUp 0.8s ease-out forwards; z-index: 10;
-        }
-        @keyframes floatUp {
-            0% { opacity: 1; transform: translateY(0); }
-            100% { opacity: 0; transform: translateY(-100px); }
-        }
+        /* Вылетающий текст */
+        .floating-text { position: fixed; color: var(--primary); font-weight: bold; font-size: 28px; pointer-events: none; animation: floatUp 0.6s ease-out forwards; z-index: 100; text-shadow: 2px 2px 5px #000; }
+        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-120px) scale(1.5); } }
 
-        /* Интерфейс */
-        .stats { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
-        .leaderboard { text-align: left; background: #f9f9f9; padding: 15px; border-radius: 10px; margin-top: 20px; }
-        .leaderboard h3 { margin-top: 0; font-size: 18px; border-bottom: 2px solid var(--primary); display: inline-block; }
-        ul { list-style: none; padding: 0; }
-        li { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; }
+        /* Таблица лидеров */
+        .leaderboard { text-align: left; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 15px; margin-top: 20px; border: 1px solid #444; }
+        ul { list-style: none; padding: 0; margin: 0; }
+        li { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
         
-        button.login-btn { background: #4285F4; color: white; border: none; padding: 12px 24px; border-radius: 5px; font-size: 16px; cursor: pointer; }
+        button { background: var(--primary); color: #000; border: none; padding: 15px 30px; border-radius: 50px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { background: var(--accent); transform: scale(1.05); }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div id="auth-section">
-        <h1>Super Clicker</h1>
-        <p>Войдите, чтобы соревноваться с другими</p>
-        <button class="login-btn" id="btn-login">Войти через Google</button>
+        <h1>Мега Кликер<br>Супер Пупер Про Макс</h1>
+        <button id="btn-login">ВОЙТИ ЧЕРЕЗ GOOGLE</button>
+    </div>
+
+    <div id="username-setup">
+        <h2>Придумай никнейм</h2>
+        <input type="text" id="new-username" placeholder="Твой крутой ник" maxlength="15">
+        <button id="btn-save-username">НАЧАТЬ ИГРУ</button>
     </div>
 
     <div id="game-section" style="display: none;">
-        <div class="stats">Монеты: <span id="score">0</span></div>
-        <div id="player-name" style="color: #7f8c8d; margin-bottom: 20px;"></div>
+        <div class="stats"><span id="score">0</span> 🪙</div>
+        <div id="display-name" style="color: #bdc3c7; font-size: 16px; margin-bottom: 10px;"></div>
 
         <div id="click-area">
             <img src="https://cdn-icons-png.flaticon.com/512/217/217853.png" alt="Coin">
         </div>
 
         <div class="leaderboard">
-            <h3>Топ-5 игроков</h3>
-            <ul id="top-list"><li>Загрузка...</li></ul>
+            <h3>ТОП ПРО-МАКС КЛИКЕРОВ</h3>
+            <ul id="top-list"></ul>
         </div>
     </div>
 </div>
 
 <script type="module">
-    // Инициализация Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, collection, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -81,25 +85,57 @@
     let userScore = 0;
     let uid = null;
 
-    // Логин
+    // Вход
     document.getElementById('btn-login').onclick = () => signInWithPopup(auth, provider);
 
-    // Обработка клика
+    // Сохранение ника
+    document.getElementById('btn-save-username').onclick = async () => {
+        const chosenName = document.getElementById('new-username').value.trim();
+        if (chosenName.length < 3) return alert("Ник слишком короткий!");
+        
+        await setDoc(doc(db, "players", uid), {
+            name: chosenName,
+            score: 0
+        });
+        
+        showGame(chosenName);
+    };
+
+    // Клик
     document.getElementById('click-area').onclick = (e) => {
         if (!uid) return;
-        
-        // 1. Анимация +1
         createFloatingText(e.clientX, e.clientY);
-        
-        // 2. Локальное обновление для скорости
         userScore++;
         document.getElementById('score').innerText = userScore;
-
-        // 3. Отправка в Firebase
-        updateDoc(doc(db, "players", uid), {
-            score: increment(1)
-        });
+        updateDoc(doc(db, "players", uid), { score: increment(1) });
     };
+
+    function showGame(name) {
+        document.getElementById('username-setup').style.display = 'none';
+        document.getElementById('game-section').style.display = 'block';
+        document.getElementById('display-name').innerText = name;
+        setupLeaderboard();
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            uid = user.uid;
+            document.getElementById('auth-section').style.display = 'none';
+            
+            const userRef = doc(db, "players", uid);
+            const userSnap = await getDoc(userRef);
+
+            if (!userSnap.exists()) {
+                // Если юзера нет в базе — показываем выбор ника
+                document.getElementById('username-setup').style.display = 'flex';
+            } else {
+                // Если юзер есть — сразу в игру
+                userScore = userSnap.data().score;
+                document.getElementById('score').innerText = userScore;
+                showGame(userSnap.data().name);
+            }
+        }
+    });
 
     function createFloatingText(x, y) {
         const el = document.createElement('div');
@@ -107,33 +143,10 @@
         el.innerText = '+1';
         el.style.left = `${x - 20}px`;
         el.style.top = `${y - 20}px`;
-        el.style.position = 'fixed'; // Используем fixed для точности координат клика
         document.body.appendChild(el);
-        setTimeout(() => el.remove(), 800);
+        setTimeout(() => el.remove(), 600);
     }
 
-    // Слушатель состояния игрока
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            uid = user.uid;
-            document.getElementById('auth-section').style.display = 'none';
-            document.getElementById('game-section').style.display = 'block';
-            document.getElementById('player-name').innerText = user.displayName;
-
-            const userRef = doc(db, "players", uid);
-            const userSnap = await getDoc(userRef);
-
-            if (!userSnap.exists()) {
-                await setDoc(userRef, { name: user.displayName, score: 0 });
-            } else {
-                userScore = userSnap.data().score;
-                document.getElementById('score').innerText = userScore;
-            }
-            setupLeaderboard();
-        }
-    });
-
-    // Живая таблица лидеров
     function setupLeaderboard() {
         const q = query(collection(db, "players"), orderBy("score", "desc"), limit(5));
         onSnapshot(q, (snapshot) => {
@@ -141,11 +154,12 @@
             list.innerHTML = '';
             snapshot.forEach((doc) => {
                 const data = doc.data();
-                list.innerHTML += `<li><span>${data.name}</span> <b>${data.score}</b></li>`;
+                const isMe = doc.id === uid ? "style='color:var(--primary)'" : "";
+                list.innerHTML += `<li ${isMe}><span>${data.name}</span> <b>${data.score}</b></li>`;
             });
         });
     }
 </script>
 
 </body>
-</html>
+    </html>
