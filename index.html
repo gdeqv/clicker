@@ -1,156 +1,150 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<title>Мега Кликер Супер пупер про макс</title>
-<style>
-  body { font-family: Arial, sans-serif; text-align: center; margin: 50px; background: #f0f0f0; }
-  #game { display: none; }
-  button { padding: 10px 20px; margin: 5px; font-size: 16px; cursor: pointer; }
-  input { padding: 5px; font-size: 14px; }
-  #achievements { margin-top: 20px; }
-  #leaderboard { margin-top: 20px; text-align: left; display: inline-block; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Clicker Online</title>
+    <style>
+        :root { --primary: #ffcc00; --dark: #2c3e50; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: white; padding: 2rem; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; position: relative; }
+        
+        /* Кнопка-кликер */
+        #click-area { position: relative; cursor: pointer; user-select: none; transition: transform 0.1s; margin: 20px auto; width: 150px; }
+        #click-area:active { transform: scale(0.95); }
+        #click-area img { width: 100%; pointer-events: none; }
 
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+        /* Вылетающий текст +1 */
+        .floating-text {
+            position: absolute; color: #27ae60; font-weight: bold; font-size: 24px;
+            pointer-events: none; animation: floatUp 0.8s ease-out forwards; z-index: 10;
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-100px); }
+        }
 
+        /* Интерфейс */
+        .stats { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+        .leaderboard { text-align: left; background: #f9f9f9; padding: 15px; border-radius: 10px; margin-top: 20px; }
+        .leaderboard h3 { margin-top: 0; font-size: 18px; border-bottom: 2px solid var(--primary); display: inline-block; }
+        ul { list-style: none; padding: 0; }
+        li { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; }
+        
+        button.login-btn { background: #4285F4; color: white; border: none; padding: 12px 24px; border-radius: 5px; font-size: 16px; cursor: pointer; }
+    </style>
 </head>
 <body>
 
-<h1>Мега Кликер Супер пупер про макс</h1>
+<div class="container">
+    <div id="auth-section">
+        <h1>Super Clicker</h1>
+        <p>Войдите, чтобы соревноваться с другими</p>
+        <button class="login-btn" id="btn-login">Войти через Google</button>
+    </div>
 
-<div id="register">
-  <h2>Регистрация</h2>
-  <input type="text" id="username" placeholder="Имя игрока">
-  <button onclick="register()">Старт</button>
+    <div id="game-section" style="display: none;">
+        <div class="stats">Монеты: <span id="score">0</span></div>
+        <div id="player-name" style="color: #7f8c8d; margin-bottom: 20px;"></div>
+
+        <div id="click-area">
+            <img src="https://cdn-icons-png.flaticon.com/512/217/217853.png" alt="Coin">
+        </div>
+
+        <div class="leaderboard">
+            <h3>Топ-5 игроков</h3>
+            <ul id="top-list"><li>Загрузка...</li></ul>
+        </div>
+    </div>
 </div>
 
-<div id="game">
-  <h2 id="greeting"></h2>
-  <button onclick="clicker()">Клик!</button>
-  <p>Клики: <span id="clickCount">0</span></p>
-  <div id="achievements">
-    <h3>Достижения</h3>
-    <ul id="achieveList"></ul>
-  </div>
-  <div id="leaderboard">
-    <h3>Топ игроков</h3>
-    <ol id="topList"></ol>
-  </div>
-</div>
+<script type="module">
+    // Инициализация Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, collection, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-<script>
-let username = '';
-let clicks = 0;
-let achievements = [];
+    const firebaseConfig = {
+        apiKey: "AIzaSyCPi_PDlqc-LHqlYdV1x_PVK4QNl6MR3EQ",
+        authDomain: "clicker-53a30.firebaseapp.com",
+        projectId: "clicker-53a30",
+        storageBucket: "clicker-53a30.firebasestorage.app",
+        messagingSenderId: "527741807824",
+        appId: "1:527741807824:web:2e406b6da947da80ac02d5"
+    };
 
-// === Firebase ===
-const firebaseConfig = {
-  apiKey: "AIzaSyCPi_PDlqc-LHqlYdV1x_PVK4QNl6MR3EQ",
-  authDomain: "clicker-53a30.firebaseapp.com",
-  projectId: "clicker-53a30",
-  storageBucket: "clicker-53a30.firebasestorage.app",
-  messagingSenderId: "527741807824",
-  appId: "1:527741807824:web:2e406b6da947da80ac02d5",
-  measurementId: "G-0R1VWR50GD"
-};
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+    let userScore = 0;
+    let uid = null;
 
-// === Регистрация игрока ===
-function register() {
-  const input = document.getElementById('username');
-  if(input.value.trim() === '') {
-    alert('Введите имя!');
-    return;
-  }
-  username = input.value.trim();
+    // Логин
+    document.getElementById('btn-login').onclick = () => signInWithPopup(auth, provider);
 
-  // Локальные данные
-  const savedData = localStorage.getItem(username);
-  if(savedData) {
-    const data = JSON.parse(savedData);
-    clicks = data.clicks;
-    achievements = data.achievements;
-  }
+    // Обработка клика
+    document.getElementById('click-area').onclick = (e) => {
+        if (!uid) return;
+        
+        // 1. Анимация +1
+        createFloatingText(e.clientX, e.clientY);
+        
+        // 2. Локальное обновление для скорости
+        userScore++;
+        document.getElementById('score').innerText = userScore;
 
-  document.getElementById('register').style.display = 'none';
-  document.getElementById('game').style.display = 'block';
-  document.getElementById('greeting').innerText = `Привет, ${username}! Добро пожаловать в Мега Кликер Супер пупер про макс!`;
-  updateUI();
-}
+        // 3. Отправка в Firebase
+        updateDoc(doc(db, "players", uid), {
+            score: increment(1)
+        });
+    };
 
-// === Кликер ===
-function clicker() {
-  clicks++;
-  checkAchievements();
-  saveData();
-  updateUI();
-}
-
-// === Достижения ===
-function checkAchievements() {
-  const thresholds = [10, 50, 100, 500];
-  thresholds.forEach(thr => {
-    if(clicks >= thr && !achievements.includes(thr)) {
-      achievements.push(thr);
-      alert(`Достижение: ${thr} кликов!`);
+    function createFloatingText(x, y) {
+        const el = document.createElement('div');
+        el.className = 'floating-text';
+        el.innerText = '+1';
+        el.style.left = `${x - 20}px`;
+        el.style.top = `${y - 20}px`;
+        el.style.position = 'fixed'; // Используем fixed для точности координат клика
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 800);
     }
-  });
-}
 
-// === Сохранение данных ===
-function saveData() {
-  const data = { clicks, achievements };
-  localStorage.setItem(username, JSON.stringify(data)); // локально
-  db.ref('players/' + username).set(data); // Firebase
-  updateLeaderboard();
-}
+    // Слушатель состояния игрока
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            uid = user.uid;
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('game-section').style.display = 'block';
+            document.getElementById('player-name').innerText = user.displayName;
 
-// === Обновление интерфейса ===
-function updateUI() {
-  document.getElementById('clickCount').innerText = clicks;
-  const achieveList = document.getElementById('achieveList');
-  achieveList.innerHTML = '';
-  achievements.forEach(a => {
-    const li = document.createElement('li');
-    li.textContent = `${a} кликов`;
-    achieveList.appendChild(li);
-  });
-  updateLeaderboard();
-}
+            const userRef = doc(db, "players", uid);
+            const userSnap = await getDoc(userRef);
 
-// === Исправленный топ игроков ===
-function updateLeaderboard() {
-  const topList = document.getElementById('topList');
-  topList.innerHTML = '';
-
-  db.ref('players').once('value', snapshot => {
-    let players = [];
-    snapshot.forEach(child => {
-      const data = child.val();
-      if(data.clicks !== undefined) {
-        players.push({ name: child.key, clicks: data.clicks });
-      }
+            if (!userSnap.exists()) {
+                await setDoc(userRef, { name: user.displayName, score: 0 });
+            } else {
+                userScore = userSnap.data().score;
+                document.getElementById('score').innerText = userScore;
+            }
+            setupLeaderboard();
+        }
     });
 
-    // Сортируем по убыванию
-    players.sort((a, b) => b.clicks - a.clicks);
-
-    // Берём топ-5
-    players.slice(0,5).forEach(p => {
-      const li = document.createElement('li');
-      li.textContent = `${p.name} - ${p.clicks}`;
-      topList.appendChild(li);
-    });
-  });
-}
-
-// Обновление топа каждые 5 секунд
-setInterval(updateLeaderboard, 5000);
+    // Живая таблица лидеров
+    function setupLeaderboard() {
+        const q = query(collection(db, "players"), orderBy("score", "desc"), limit(5));
+        onSnapshot(q, (snapshot) => {
+            const list = document.getElementById('top-list');
+            list.innerHTML = '';
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                list.innerHTML += `<li><span>${data.name}</span> <b>${data.score}</b></li>`;
+            });
+        });
+    }
 </script>
 
 </body>
