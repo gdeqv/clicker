@@ -128,15 +128,20 @@ function updateLeaderboard() {
   const topList = document.getElementById('topList');
   topList.innerHTML = '';
 
-  db.ref('players').orderByChild('clicks').limitToLast(5).once('value', snapshot => {
+  db.ref('players').once('value', snapshot => {
     let players = [];
     snapshot.forEach(child => {
-      players.push({ name: child.key, clicks: child.val().clicks });
+      const data = child.val();
+      if(data.clicks !== undefined) {
+        players.push({ name: child.key, clicks: data.clicks });
+      }
     });
 
-    players.sort((a,b) => b.clicks - a.clicks);
+    // Сортировка по убыванию
+    players.sort((a, b) => b.clicks - a.clicks);
 
-    players.forEach(p => {
+    // Берём топ-5
+    players.slice(0,5).forEach(p => {
       const li = document.createElement('li');
       li.textContent = `${p.name} - ${p.clicks}`;
       topList.appendChild(li);
@@ -144,7 +149,7 @@ function updateLeaderboard() {
   });
 }
 
-// Обновление топа каждые 5 секунд (чтобы видеть клики всех игроков)
+// Обновление топа каждые 5 секунд
 setInterval(updateLeaderboard, 5000);
 </script>
 
