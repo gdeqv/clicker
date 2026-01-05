@@ -11,6 +11,11 @@
   #achievements { margin-top: 20px; }
   #leaderboard { margin-top: 20px; text-align: left; display: inline-block; }
 </style>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
 </head>
 <body>
 
@@ -41,7 +46,21 @@ let username = '';
 let clicks = 0;
 let achievements = [];
 
-// Регистрируем игрока
+// === Firebase ===
+const firebaseConfig = {
+  apiKey: "AIzaSyCPi_PDlqc-LHqlYdV1x_PVK4QNl6MR3EQ",
+  authDomain: "clicker-53a30.firebaseapp.com",
+  projectId: "clicker-53a30",
+  storageBucket: "clicker-53a30.firebasestorage.app",
+  messagingSenderId: "527741807824",
+  appId: "1:527741807824:web:2e406b6da947da80ac02d5",
+  measurementId: "G-0R1VWR50GD"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// === Регистрация игрока ===
 function register() {
   const input = document.getElementById('username');
   if(input.value.trim() === '') {
@@ -50,7 +69,7 @@ function register() {
   }
   username = input.value.trim();
 
-  // Загружаем данные игрока если есть
+  // Локальные данные
   const savedData = localStorage.getItem(username);
   if(savedData) {
     const data = JSON.parse(savedData);
@@ -64,7 +83,7 @@ function register() {
   updateUI();
 }
 
-// Кликер
+// === Кликер ===
 function clicker() {
   clicks++;
   checkAchievements();
@@ -72,7 +91,7 @@ function clicker() {
   updateUI();
 }
 
-// Проверка достижений
+// === Достижения ===
 function checkAchievements() {
   const thresholds = [10, 50, 100, 500];
   thresholds.forEach(thr => {
@@ -83,14 +102,15 @@ function checkAchievements() {
   });
 }
 
-// Сохраняем данные локально
+// === Сохранение данных ===
 function saveData() {
   const data = { clicks, achievements };
-  localStorage.setItem(username, JSON.stringify(data));
+  localStorage.setItem(username, JSON.stringify(data)); // локально
+  db.ref('players/' + username).set(data); // Firebase
   updateLeaderboard();
 }
 
-// Обновление интерфейса
+// === Обновление интерфейса ===
 function updateUI() {
   document.getElementById('clickCount').innerText = clicks;
   const achieveList = document.getElementById('achieveList');
@@ -103,29 +123,30 @@ function updateUI() {
   updateLeaderboard();
 }
 
-// Топ игроков
+// === Топ игроков ===
 function updateLeaderboard() {
   const topList = document.getElementById('topList');
   topList.innerHTML = '';
 
-  // Получаем всех игроков из localStorage
-  let players = [];
-  for(let i=0; i<localStorage.length; i++) {
-    const key = localStorage.key(i);
-    try {
-      const data = JSON.parse(localStorage.getItem(key));
-      players.push({ name: key, clicks: data.clicks || 0 });
-    } catch(e){}
-  }
+  db.ref('players').orderByChild('clicks').limitToLast(5).once('value', snapshot => {
+    let players = [];
+    snapshot.forEach(child => {
+      players.push({ name: child.key, clicks: child.val().clicks });
+    });
 
-  players.sort((a,b) => b.clicks - a.clicks);
-  players.slice(0,5).forEach(p => {
-    const li = document.createElement('li');
-    li.textContent = `${p.name} - ${p.clicks}`;
-    topList.appendChild(li);
+    players.sort((a,b) => b.clicks - a.clicks);
+
+    players.forEach(p => {
+      const li = document.createElement('li');
+      li.textContent = `${p.name} - ${p.clicks}`;
+      topList.appendChild(li);
+    });
   });
 }
+
+// Обновление топа каждые 5 секунд (чтобы видеть клики всех игроков)
+setInterval(updateLeaderboard, 5000);
 </script>
 
 </body>
-  </html>
+</html>
