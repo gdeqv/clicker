@@ -123,7 +123,7 @@ function updateUI() {
   updateLeaderboard();
 }
 
-// === Топ игроков ===
+// === Исправленный топ игроков ===
 function updateLeaderboard() {
   const topList = document.getElementById('topList');
   topList.innerHTML = '';
@@ -137,7 +137,7 @@ function updateLeaderboard() {
       }
     });
 
-    // Сортировка по убыванию
+    // Сортируем по убыванию
     players.sort((a, b) => b.clicks - a.clicks);
 
     // Берём топ-5
